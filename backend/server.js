@@ -1,17 +1,17 @@
 const express = require('express');
-const { Sequelize, DataTypes } = require('sequelize');
+const { Sequelize } = require('sequelize');
 const cors = require('cors');
 const path = require('path');
-const fs = require('fs'); // Added to check if folders exist
+const fs = require('fs');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 1. Database Connection
+// 1. Database Connection (Standard Render Setup)
 const dbUrl = process.env.DATABASE_URL;
 if (!dbUrl) {
-  console.error("❌ DATABASE_URL is missing!");
+  console.error("❌ DATABASE_URL missing from Environment Variables!");
   process.exit(1);
 }
 
@@ -22,36 +22,33 @@ const sequelize = new Sequelize(dbUrl, {
   }
 });
 
-// 2. API Routes (Always keep these at the top)
+// 2. API Routes
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'API is running', timestamp: new Date() });
+  res.json({ status: 'Online', message: 'SMS Backend is running' });
 });
 
-// 3. Robust Static File Serving
-// This looks for the frontend build folder relative to this file
-const buildPath = path.join(__dirname, '..', 'frontend', 'build');
+// 3. Serve Frontend (Simplified Path)
+// Since server.js is now in the root, we look directly into /frontend/build
+const buildPath = path.join(__dirname, 'frontend', 'build');
 
 if (fs.existsSync(buildPath)) {
   app.use(express.static(buildPath));
   
-  // The "Catch-all" to serve index.html for React routing
+  // Handle React Routing
   app.get('*', (req, res) => {
     res.sendFile(path.join(buildPath, 'index.html'));
   });
-  console.log("✅ Frontend build detected and serving.");
+  console.log("✅ Serving Frontend from:", buildPath);
 } else {
-  console.warn("⚠️ Frontend build folder not found at:", buildPath);
   app.get('/', (req, res) => {
-    res.send("Backend is live, but Frontend build is missing. Check your Build Command.");
+    res.send("Server is LIVE. Note: Frontend build folder not found in /frontend/build");
   });
 }
 
-// 4. Start Server
+// 4. Start
 const PORT = process.env.PORT || 10000;
-sequelize.sync()
-  .then(() => {
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Server listening on port ${PORT}`);
-    });
-  })
-  .catch(err => console.error('❌ DB Error:', err));
+sequelize.sync().then(() => {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 SMS App active on port ${PORT}`);
+  });
+});
